@@ -7,6 +7,9 @@ window.GameStorage = (function () {
     DAILY: 'std_daily'
   };
 
+  var CACHE_TTL = 5 * 60 * 1000;
+  var cacheTimestamps = {};
+
   var DEFAULT_PLAYER = {
     nickname: '玩家',
     avatar: 0,
@@ -33,7 +36,16 @@ window.GameStorage = (function () {
   function _set(key, value) {
     try {
       localStorage.setItem(key, JSON.stringify(value));
+      cacheTimestamps[key] = Date.now();
     } catch (e) { }
+  }
+
+  function _isCacheValid(key) {
+    if (!cacheTimestamps[key]) {
+      var raw = localStorage.getItem(key);
+      cacheTimestamps[key] = raw ? Date.now() : 0;
+    }
+    return (Date.now() - cacheTimestamps[key]) < CACHE_TTL;
   }
 
   function initPlayer() {

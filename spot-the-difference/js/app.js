@@ -4,6 +4,9 @@ window.GameApp = (function () {
   var versusState = null;
   var particleAnimId = null;
   var particles = [];
+  var stompClient = null;
+  var currentRoomId = null;
+  var backendAvailable = false;
 
   function init() {
     GameStorage.initPlayer();
@@ -16,13 +19,73 @@ window.GameApp = (function () {
 
     initParticles();
     bindEvents();
-    updateHome();
-    navigateTo('home');
+
+    if (GameAPI.isLoggedIn()) {
+      loadProfileFromAPI();
+    } else {
+      navigateTo('login');
+    }
 
     window.addEventListener('hashchange', function () {
       var hash = location.hash.replace('#', '') || 'home';
       if (hash !== currentPage) showPage(hash);
     });
+  }
+
+  function loadProfileFromAPI() {
+    GameAPI.getProfile().then(function(profile) {
+      backendAvailable = true;
+      var cached = GameStorage.getPlayer();
+      var merged = Object.assign({}, cached, profile);
+      GameStorage.savePlayer(merged);
+      updateHome();
+      navigateTo('home');
+    }).catch(function(err) {
+      if (err.code === 401) {
+        navigateTo('login');
+      } else {
+        backendAvailable = false;
+        updateHome();
+        navigateTo('home');
+        showToast('无法连接服务器，使用离线模式', 'info');
+      }
+    });
+  }
+
+  function doLogin() {
+    var username = document.getElementById('login-username').value.trim();
+    var password = document.getElementById('login-password').value.trim();
+    if (!username || !password) { showToast('请输入用户名和密码', 'error'); return; }
+    GameAPI.login(username, password).then(function(data) {
+      GameAPI.setToken(data.token);
+      backendAvailable = true;
+      loadProfileFromAPI();
+    }).catch(function(err) {
+      showToast('登录失败：' + (err.message || '请检查用户名和密码'), 'error');
+    });
+  }
+
+  function doRegister() {
+    var username = document.getElementById('register-username').value.trim();
+    var nickname = document.getElementById('register-nickname').value.trim();
+    var password = document.getElementById('register-password').value.trim();
+    if (!username || !password) { showToast('请输入用户名和密码', 'error'); return; }
+    GameAPI.register(username, password, nickname).then(function() {
+      return GameAPI.login(username, password);
+    }).then(function(data) {
+      GameAPI.setToken(data.token);
+      backendAvailable = true;
+      loadProfileFromAPI();
+    }).catch(function(err) {
+      showToast('注册失败：' + (err.message || '请稍后重试'), 'error');
+    });
+  }
+
+  function doLogout() {
+    GameAPI.clearToken();
+    versusState = null;
+    gameState = null;
+    navigateTo('login');
   }
 
   function navigateTo(page) {
@@ -38,6 +101,7 @@ window.GameApp = (function () {
     if (el) {
       el.classList.add('active');
     }
+    if (page === 'login') return;
     if (page === 'home') updateHome();
     if (page === 'level-select') renderLevelSelect();
     if (page === 'leaderboard') renderLeaderboard();
@@ -47,6 +111,25 @@ window.GameApp = (function () {
 
   function bindEvents() {
     var $ = function (id) { return document.getElementById(id); };
+
+    $('btn-login').addEventListener('click', function () { doLogin(); });
+    $('btn-register').addEventListener('click', function () { doRegister(); });
+    $('btn-show-register').addEventListener('click', function (e) {
+      e.preventDefault();
+      $('login-form').style.display = 'none';
+      $('register-form').style.display = '';
+    });
+    $('btn-show-login').addEventListener('click', function (e) {
+      e.preventDefault();
+      $('register-form').style.display = 'none';
+      $('login-form').style.display = '';
+    });
+    $('login-password').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') doLogin();
+    });
+    $('register-password').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') doRegister();
+    });
 
     $('btn-start-game').addEventListener('click', function () {
       GameAudio.playClick();
@@ -137,8 +220,12 @@ window.GameApp = (function () {
     $('btn-reset').addEventListener('click', function () {
       if (confirm('确定要重置所有进度吗？此操作不可撤销！')) {
         GameStorage.resetAll();
-        updateHome();
-        showToast('进度已重置', 'info');
+        if (backendAvailable) {
+          doLogout();
+        } else {
+          updateHome();
+          showToast('进度已重置', 'info');
+        }
       }
     });
 
@@ -197,7 +284,21 @@ window.GameApp = (function () {
   }
 
   function updateHome() {
-    var player = GameStorage.getPlayer();
+    if (backendAvailable) {
+      GameAPI.getProfile().then(function(profile) {
+        var cached = GameStorage.getPlayer();
+        var merged = Object.assign({}, cached, profile);
+        GameStorage.savePlayer(merged);
+        renderHomeUI(merged);
+      }).catch(function() {
+        renderHomeUI(GameStorage.getPlayer());
+      });
+    } else {
+      renderHomeUI(GameStorage.getPlayer());
+    }
+  }
+
+  function renderHomeUI(player) {
     var $ = function (id) { return document.getElementById(id); };
     $('home-name').textContent = player.nickname;
     $('home-level').textContent = 'Lv.' + player.level;
@@ -260,6 +361,27 @@ window.GameApp = (function () {
 
   // ===== LEVEL SELECT =====
   function renderLevelSelect() {
+    if (backendAvailable) {
+      GameAPI.getProgress().then(function(progress) {
+        if (progress && progress.levels) {
+          var adventure = { levels: {} };
+          for (var k in progress.levels) {
+            if (progress.levels.hasOwnProperty(k)) {
+              adventure.levels[k] = progress.levels[k];
+            }
+          }
+          GameStorage.saveAdventure(adventure);
+        }
+        renderLevelSelectUI();
+      }).catch(function() {
+        renderLevelSelectUI();
+      });
+    } else {
+      renderLevelSelectUI();
+    }
+  }
+
+  function renderLevelSelectUI() {
     var adventure = GameStorage.getAdventure();
     var totalStars = GameStorage.getTotalStars();
     document.getElementById('total-stars').textContent = totalStars;
@@ -341,14 +463,60 @@ window.GameApp = (function () {
 
   // ===== GAME LOGIC =====
   function startGame(levelId) {
+    if (backendAvailable) {
+      GameAPI.startLevel(levelId).then(function() {
+        return GameAPI.getLevelDetail(levelId);
+      }).then(function(level) {
+        backendAvailable = true;
+        initGameState(levelId, level);
+        if (level.imageAUrl) {
+          document.getElementById('img-a').src = level.imageAUrl;
+        } else {
+          var fallback = GameLevels.generateLevel(levelId);
+          if (fallback) document.getElementById('img-a').src = fallback.imageA;
+        }
+        if (level.imageBUrl) {
+          document.getElementById('img-b').src = level.imageBUrl;
+        } else {
+          var fallback2 = GameLevels.generateLevel(levelId);
+          if (fallback2) document.getElementById('img-b').src = fallback2.imageB;
+        }
+        startGameTimerFromState();
+      }).catch(function(err) {
+        if (err.code === 401) {
+          navigateTo('login');
+        } else {
+          backendAvailable = false;
+          startGameLocal(levelId);
+        }
+      });
+    } else {
+      startGameLocal(levelId);
+    }
+  }
+
+  function startGameLocal(levelId) {
     var levelData = GameLevels.generateLevel(levelId);
     if (!levelData) return;
+    initGameState(levelId, levelData);
+    document.getElementById('img-a').src = levelData.imageA;
+    document.getElementById('img-b').src = levelData.imageB;
+    startGameTimerFromState();
+  }
 
+  function initGameState(levelId, levelData) {
     var player = GameStorage.getPlayer();
+    var timeLimit = levelData.timeLimit || 120;
+    var diffs = levelData.differences || [];
+    if (!diffs.length && levelData.diffCount) {
+      var fallback = GameLevels.generateLevel(levelId);
+      if (fallback) diffs = fallback.differences;
+    }
+
     gameState = {
       levelId: levelId,
-      levelData: levelData,
-      timeLeft: levelData.timeLimit,
+      levelData: levelData.differences ? levelData : Object.assign({}, levelData, { differences: diffs }),
+      timeLeft: timeLimit,
       score: 0,
       combo: 0,
       maxCombo: 0,
@@ -367,11 +535,9 @@ window.GameApp = (function () {
       hintTimer: null
     };
 
-    document.getElementById('img-a').src = levelData.imageA;
-    document.getElementById('img-b').src = levelData.imageB;
-    document.getElementById('game-timer').textContent = levelData.timeLimit;
+    document.getElementById('game-timer').textContent = timeLimit;
     document.getElementById('game-timer').classList.remove('warning');
-    document.getElementById('game-level-info').textContent = '第 ' + levelId + ' 关 · ' + levelData.name;
+    document.getElementById('game-level-info').textContent = '第 ' + levelId + ' 关 · ' + (levelData.name || '');
     document.getElementById('game-score').textContent = '0';
     document.getElementById('game-combo').classList.remove('active');
     document.getElementById('hint-count').textContent = gameState.hintCount;
@@ -381,12 +547,10 @@ window.GameApp = (function () {
     clearMarkers('game-image-b');
 
     navigateTo('game');
-    startGameTimer();
-
     GameAudio.startMusic();
   }
 
-  function startGameTimer() {
+  function startGameTimerFromState() {
     if (gameState.timer) clearInterval(gameState.timer);
     gameState.timer = setInterval(function () {
       if (gameState.paused || gameState.finished) return;
@@ -425,6 +589,57 @@ window.GameApp = (function () {
     gameState.lastClickTime = Date.now();
     gameState.autoHintShown = false;
 
+    if (backendAvailable && gameState.levelId) {
+      GameAPI.checkClick(gameState.levelId, clickX, clickY).then(function(result) {
+        if (result.hit) {
+          var diff = {
+            x: result.diffX || clickX,
+            y: result.diffY || clickY,
+            radius: result.radius || 30,
+            found: true,
+            hinted: false
+          };
+          if (result.diffId) {
+            var existing = gameState.levelData.differences.filter(function(d) { return d.id === result.diffId; })[0];
+            if (existing) { diff = existing; diff.found = true; }
+          }
+          foundDiff(diff, side, wrapper);
+        } else {
+          wrongClick(side, wrapper, e.clientX - rect.left, e.clientY - rect.top);
+        }
+        if (result.score !== undefined) {
+          gameState.score = result.score;
+          document.getElementById('game-score').textContent = gameState.score;
+        }
+        if (result.combo !== undefined) {
+          gameState.combo = result.combo;
+          var comboEl = document.getElementById('game-combo');
+          if (gameState.combo >= 2) {
+            comboEl.textContent = 'x' + gameState.combo + ' 连击';
+            comboEl.classList.add('active');
+          } else {
+            comboEl.classList.remove('active');
+          }
+        }
+        if (result.foundCount !== undefined) {
+          gameState.foundCount = result.foundCount;
+          if (gameState.foundCount >= gameState.levelData.differences.length) {
+            setTimeout(function () { finishGame(); }, 500);
+          }
+        }
+      }).catch(function(err) {
+        if (err.code === 401) {
+          navigateTo('login');
+        } else {
+          handleGameClickLocal(e, side, clickX, clickY, wrapper, rect);
+        }
+      });
+    } else {
+      handleGameClickLocal(e, side, clickX, clickY, wrapper, rect);
+    }
+  }
+
+  function handleGameClickLocal(e, side, clickX, clickY, wrapper, rect) {
     var found = false;
     var diffs = gameState.levelData.differences;
 
@@ -661,6 +876,36 @@ window.GameApp = (function () {
 
     GameAudio.stopMusic();
 
+    var timeUsed = (gameState.levelData.timeLimit || 120) - gameState.timeLeft;
+    var hintsUsed = (gameState.levelData.timeLimit || 120) - gameState.hintCount;
+
+    if (backendAvailable && gameState.levelId) {
+      GameAPI.completeLevel(gameState.levelId, timeUsed, hintsUsed).then(function(result) {
+        if (result) {
+          var totalScore = result.score || (gameState.score + gameState.timeLeft * 5);
+          var stars = result.stars || 0;
+          var timeBonus = result.timeBonus || gameState.timeLeft * 5;
+          var completed = result.completed !== undefined ? result.completed : (gameState.foundCount >= gameState.levelData.differences.length);
+          showResult(totalScore, stars, timeBonus, completed);
+          if (result.player) {
+            GameStorage.savePlayer(Object.assign({}, GameStorage.getPlayer(), result.player));
+          }
+        } else {
+          finishGameLocal();
+        }
+      }).catch(function(err) {
+        if (err.code === 401) {
+          navigateTo('login');
+        } else {
+          finishGameLocal();
+        }
+      });
+    } else {
+      finishGameLocal();
+    }
+  }
+
+  function finishGameLocal() {
     var timeBonus = gameState.timeLeft * 5;
     var totalScore = gameState.score + timeBonus;
     var maxPossible = gameState.levelData.differences.length * 100 + gameState.levelData.timeLimit * 5;
@@ -767,6 +1012,156 @@ window.GameApp = (function () {
     document.getElementById('matchmaking-view').style.display = '';
     document.getElementById('match-found-view').style.display = 'none';
 
+    if (backendAvailable && mode === 'realtime') {
+      connectVersusWebSocket(function() {
+        if (stompClient && stompClient.connected) {
+          stompClient.send('/app/match/join', {}, JSON.stringify({mode: mode}));
+        }
+      });
+    } else if (backendAvailable && mode === 'async') {
+      GameAPI.startAsyncChallenge('normal').then(function(data) {
+        if (data && data.levelId) {
+          startVersusGameAsync(data);
+        } else {
+          startVersusMatchmakingLocal(mode);
+        }
+      }).catch(function() {
+        startVersusMatchmakingLocal(mode);
+      });
+    } else {
+      startVersusMatchmakingLocal(mode);
+    }
+  }
+
+  function connectVersusWebSocket(onConnect) {
+    try {
+      var socket = new SockJS(GameAPI.BASE_URL.replace('/api', '') + '/ws/game');
+      stompClient = Stomp.over(socket);
+      stompClient.debug = null;
+      stompClient.connect({}, function(frame) {
+        stompClient.subscribe('/user/queue/matching', function(message) {
+          var data = JSON.parse(message.body);
+          handleMatchingUpdate(data);
+        });
+        if (currentRoomId) {
+          stompClient.subscribe('/game/room/' + currentRoomId, function(message) {
+            var data = JSON.parse(message.body);
+            handleRoomUpdate(data);
+          });
+        }
+        if (onConnect) onConnect();
+      }, function(error) {
+        showToast('WebSocket连接失败，使用离线模式', 'error');
+      });
+    } catch(e) {
+      showToast('WebSocket连接失败，使用离线模式', 'error');
+    }
+  }
+
+  function handleMatchingUpdate(data) {
+    if (data.status === 'MATCHED') {
+      currentRoomId = data.roomId;
+      GameAudio.playMatchFound();
+      document.getElementById('matchmaking-view').style.display = 'none';
+      document.getElementById('match-found-view').style.display = '';
+
+      var opponentsList = document.getElementById('opponents-list');
+      opponentsList.innerHTML = '';
+
+      if (data.opponents) {
+        data.opponents.forEach(function(opp) {
+          var card = document.createElement('div');
+          card.className = 'opponent-card';
+          card.innerHTML = '<div class="opponent-avatar">' + (opp.avatar || '🎮') + '</div><div class="opponent-name">' + (opp.nickname || opp.name || '') + '</div><div class="opponent-elo">ELO ' + (opp.eloRating || opp.elo || 1000) + '</div>';
+          opponentsList.appendChild(card);
+        });
+      }
+
+      var countdown = 3;
+      var countdownEl = document.getElementById('match-countdown');
+      countdownEl.textContent = countdown;
+      var cdTimer = setInterval(function() {
+        countdown--;
+        countdownEl.textContent = countdown;
+        if (countdown <= 0) {
+          clearInterval(cdTimer);
+          if (data.levelId) {
+            startVersusGameFromServer(data);
+          }
+        }
+      }, 1000);
+    } else if (data.status === 'WAITING') {
+      // Still waiting for match
+    }
+  }
+
+  function handleRoomUpdate(data) {
+    if (!versusState) return;
+    if (data.type === 'OPPONENT_FOUND_DIFF') {
+      var oppIdx = -1;
+      versusState.opponents.forEach(function(opp, i) {
+        if (opp.name === data.playerName || opp.id === data.playerId) oppIdx = i;
+      });
+      if (oppIdx >= 0) {
+        versusState.opponents[oppIdx].foundCount = (versusState.opponents[oppIdx].foundCount || 0) + 1;
+        if (data.diffId) versusState.opponents[oppIdx].foundDiffs.push(data.diffId);
+        GameAudio.playVersusOpponent();
+        renderVersusSidebar();
+        flashOpponent(oppIdx);
+      }
+    } else if (data.type === 'GAME_END') {
+      finishVersusGame();
+    }
+  }
+
+  function startVersusGameFromServer(data) {
+    var levelId = data.levelId;
+    GameAPI.startLevel(levelId).then(function() {
+      return GameAPI.getLevelDetail(levelId);
+    }).then(function(level) {
+      var opponents = (data.opponents || []).map(function(opp) {
+        return {
+          name: opp.nickname || opp.name || '对手',
+          avatar: opp.avatar || '🎮',
+          elo: opp.eloRating || opp.elo || 1000,
+          foundCount: 0,
+          foundDiffs: [],
+          finished: false
+        };
+      });
+      startVersusGameState(levelId, level, opponents);
+    }).catch(function() {
+      startVersusMatchmakingLocal('realtime');
+    });
+  }
+
+  function startVersusGameAsync(data) {
+    var levelId = data.levelId;
+    GameAPI.getLevelDetail(levelId).then(function(level) {
+      var opponents = (data.opponents || []).map(function(opp) {
+        return {
+          name: opp.nickname || opp.name || '挑战者',
+          avatar: opp.avatar || '🎮',
+          elo: opp.eloRating || opp.elo || 1000,
+          foundCount: opp.foundCount || 0,
+          foundDiffs: [],
+          finished: false,
+          speed: opp.speed || 0.7,
+          accuracy: opp.accuracy || 0.8
+        };
+      });
+      if (!opponents.length) {
+        opponents = AI_OPPONENTS.slice().sort(function() { return Math.random() - 0.5; }).slice(0, 2).map(function(o) {
+          return Object.assign({}, o, { foundCount: 0, foundDiffs: [], finished: false });
+        });
+      }
+      startVersusGameState(levelId, level, opponents);
+    }).catch(function() {
+      startVersusMatchmakingLocal('async');
+    });
+  }
+
+  function startVersusMatchmakingLocal(mode) {
     var matchTime = 3000 + Math.random() * 2000;
     setTimeout(function () {
       GameAudio.playMatchFound();
@@ -808,6 +1203,21 @@ window.GameApp = (function () {
     var levelId = Math.floor(Math.random() * 5) + 1;
     var levelData = GameLevels.generateLevel(levelId);
     if (!levelData) return;
+    startVersusGameState(levelId, levelData, opponents);
+  }
+
+  function startVersusGameState(levelId, levelData, opponents) {
+    if (!levelData.differences || !levelData.differences.length) {
+      var fallback = GameLevels.generateLevel(levelId);
+      if (fallback) levelData = fallback;
+    }
+    if (!levelData.imageA) {
+      var fallback2 = GameLevels.generateLevel(levelId);
+      if (fallback2) {
+        levelData.imageA = fallback2.imageA;
+        levelData.imageB = fallback2.imageB;
+      }
+    }
 
     var player = GameStorage.getPlayer();
 
@@ -827,8 +1237,8 @@ window.GameApp = (function () {
       hintCount: player.hintCount || 3,
       opponents: opponents.map(function (opp) {
         return Object.assign({}, opp, {
-          foundCount: 0,
-          foundDiffs: [],
+          foundCount: opp.foundCount || 0,
+          foundDiffs: opp.foundDiffs || [],
           finished: false
         });
       }),
@@ -840,7 +1250,7 @@ window.GameApp = (function () {
     document.getElementById('versus-img-b').src = levelData.imageB;
     document.getElementById('versus-timer').textContent = '90';
     document.getElementById('versus-timer').classList.remove('warning');
-    document.getElementById('versus-level-info').textContent = '竞速对战 · ' + levelData.name;
+    document.getElementById('versus-level-info').textContent = '竞速对战 · ' + (levelData.name || '');
     document.getElementById('versus-score').textContent = '0';
     document.getElementById('versus-combo').classList.remove('active');
     document.getElementById('versus-hint-count').textContent = versusState.hintCount;
@@ -867,26 +1277,28 @@ window.GameApp = (function () {
     }, 1000);
 
     versusState.opponents.forEach(function (opp, idx) {
-      var aiInterval = setInterval(function () {
-        if (versusState.finished || opp.finished) return;
-        var unfound = versusState.levelData.differences.filter(function (d) {
-          return opp.foundDiffs.indexOf(d.id) === -1;
-        });
-        if (unfound.length === 0) {
-          opp.finished = true;
-          return;
-        }
-        var chance = opp.accuracy * (0.5 + Math.random() * 0.5);
-        if (Math.random() < chance * opp.speed * 0.15) {
-          var diff = unfound[Math.floor(Math.random() * unfound.length)];
-          opp.foundCount++;
-          opp.foundDiffs.push(diff.id);
-          GameAudio.playVersusOpponent();
-          renderVersusSidebar();
-          flashOpponent(idx);
-        }
-      }, 1000);
-      versusState.aiTimers.push(aiInterval);
+      if (opp.speed || opp.accuracy) {
+        var aiInterval = setInterval(function () {
+          if (versusState.finished || opp.finished) return;
+          var unfound = versusState.levelData.differences.filter(function (d) {
+            return opp.foundDiffs.indexOf(d.id) === -1;
+          });
+          if (unfound.length === 0) {
+            opp.finished = true;
+            return;
+          }
+          var chance = (opp.accuracy || 0.7) * (0.5 + Math.random() * 0.5);
+          if (Math.random() < chance * (opp.speed || 0.7) * 0.15) {
+            var diff = unfound[Math.floor(Math.random() * unfound.length)];
+            opp.foundCount++;
+            opp.foundDiffs.push(diff.id);
+            GameAudio.playVersusOpponent();
+            renderVersusSidebar();
+            flashOpponent(idx);
+          }
+        }, 1000);
+        versusState.aiTimers.push(aiInterval);
+      }
     });
   }
 
@@ -923,6 +1335,84 @@ window.GameApp = (function () {
     var clickX = (e.clientX - rect.left) / rect.width * GameLevels.WIDTH;
     var clickY = (e.clientY - rect.top) / rect.height * GameLevels.HEIGHT;
 
+    if (backendAvailable && versusState.levelId) {
+      GameAPI.checkClick(versusState.levelId, clickX, clickY).then(function(result) {
+        if (result.hit) {
+          var diff = {
+            x: result.diffX || clickX,
+            y: result.diffY || clickY,
+            radius: result.radius || 30,
+            found: true,
+            hinted: false
+          };
+          if (result.diffId) {
+            var existing = versusState.levelData.differences.filter(function(d) { return d.id === result.diffId; })[0];
+            if (existing) { diff = existing; diff.found = true; }
+          }
+          versusState.combo++;
+          versusState.foundCount++;
+          var multiplier = diff.hinted ? 0 : (1 + versusState.combo * 0.1);
+          var points = Math.round(100 * multiplier);
+          versusState.score += points;
+          versusState.baseScore += diff.hinted ? 0 : 100;
+          versusState.comboScore += points - (diff.hinted ? 0 : 100);
+
+          document.getElementById('versus-score').textContent = versusState.score;
+          var comboEl = document.getElementById('versus-combo');
+          if (versusState.combo >= 2) {
+            comboEl.textContent = 'x' + versusState.combo + ' 连击';
+            comboEl.classList.add('active');
+          }
+          GameAudio.playFindDiff();
+          var otherSide = side === 'a' ? 'b' : 'a';
+          addDiffMarker(wrapper, diff);
+          addDiffMarker(document.getElementById('versus-image-' + otherSide), diff);
+          var imgRect = img.getBoundingClientRect();
+          var markerX = diff.x / GameLevels.WIDTH * imgRect.width;
+          var markerY = diff.y / GameLevels.HEIGHT * imgRect.height;
+          createParticleBurst(wrapper.querySelector('.particle-container'), markerX, markerY);
+          if (points > 0) showScoreFly(wrapper, markerX, markerY, '+' + points);
+
+          if (stompClient && stompClient.connected && currentRoomId) {
+            stompClient.send('/app/game/room/' + currentRoomId + '/found', {}, JSON.stringify({diffId: diff.id}));
+          }
+        } else {
+          versusState.combo = 0;
+          versusState.score = Math.max(0, versusState.score - 20);
+          versusState.penaltyScore += 20;
+          versusState.wrongCount++;
+          versusState.timeLeft = Math.max(0, versusState.timeLeft - 3);
+          document.getElementById('versus-score').textContent = versusState.score;
+          document.getElementById('versus-combo').classList.remove('active');
+          GameAudio.playWrongClick();
+          var px = e.clientX - rect.left;
+          var py = e.clientY - rect.top;
+          var marker = document.createElement('div');
+          marker.className = 'wrong-marker';
+          marker.textContent = '✕';
+          marker.style.left = (px - 14) + 'px';
+          marker.style.top = (py - 14) + 'px';
+          wrapper.appendChild(marker);
+          setTimeout(function () { marker.remove(); }, 800);
+          wrapper.classList.add('screen-shake');
+          setTimeout(function () { wrapper.classList.remove('screen-shake'); }, 300);
+        }
+        if (versusState.foundCount >= versusState.levelData.differences.length) {
+          setTimeout(function () { finishVersusGame(); }, 500);
+        }
+      }).catch(function(err) {
+        if (err.code === 401) {
+          navigateTo('login');
+        } else {
+          handleVersusClickLocal(e, side, clickX, clickY, wrapper, rect);
+        }
+      });
+    } else {
+      handleVersusClickLocal(e, side, clickX, clickY, wrapper, rect);
+    }
+  }
+
+  function handleVersusClickLocal(e, side, clickX, clickY, wrapper, rect) {
     var found = false;
     var diffs = versusState.levelData.differences;
 
@@ -1034,8 +1524,24 @@ window.GameApp = (function () {
     versusState.aiTimers.forEach(function (t) { clearInterval(t); });
     GameAudio.stopMusic();
 
+    if (stompClient && stompClient.connected) {
+      try { stompClient.disconnect(); } catch(e) {}
+      stompClient = null;
+    }
+
     var timeBonus = versusState.timeLeft * 5;
     var totalScore = versusState.score + timeBonus;
+
+    if (backendAvailable && versusState.levelId) {
+      var timeUsed = 90 - versusState.timeLeft;
+      GameAPI.completeLevel(versusState.levelId, timeUsed, 0).catch(function() {});
+      GameAPI.submitAsyncChallenge({
+        levelId: versusState.levelId,
+        score: totalScore,
+        timeUsed: timeUsed,
+        foundCount: versusState.foundCount
+      }).catch(function() {});
+    }
 
     var rankings = versusState.opponents.map(function (opp) {
       return { name: opp.name, avatar: opp.avatar, score: opp.foundCount * 100, isPlayer: false };
@@ -1114,6 +1620,32 @@ window.GameApp = (function () {
     var list = document.getElementById('leaderboard-list');
     list.innerHTML = '';
 
+    if (tab === 'level' && backendAvailable) {
+      GameAPI.getLeaderboard().then(function(data) {
+        if (data && data.length) {
+          data.slice(0, 20).forEach(function(entry, i) {
+            var rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+            var item = document.createElement('div');
+            item.className = 'leaderboard-item' + (i < 3 ? ' top' + (i + 1) : '');
+            item.innerHTML = '<div class="leaderboard-rank ' + rankClass + '">' + (i + 1) + '</div><div class="leaderboard-avatar">🎮</div><div class="leaderboard-name">' + (entry.nickname || entry.name || '') + ' <span style="font-size:11px;color:var(--text-muted)">第' + (entry.levelId || entry.level || '') + '关</span></div><div class="leaderboard-score">' + entry.score + '</div>';
+            list.appendChild(item);
+          });
+        } else {
+          renderLeaderboardLocal(tab);
+        }
+      }).catch(function() {
+        renderLeaderboardLocal(tab);
+      });
+    } else {
+      renderLeaderboardLocal(tab);
+    }
+  }
+
+  function renderLeaderboardLocal(tab) {
+    tab = tab || 'level';
+    var list = document.getElementById('leaderboard-list');
+    list.innerHTML = '';
+
     if (tab === 'level') {
       var lb = GameStorage.getLeaderboard();
       var allScores = [];
@@ -1165,7 +1697,27 @@ window.GameApp = (function () {
 
   // ===== PROFILE =====
   function renderProfile() {
-    var player = GameStorage.getPlayer();
+    if (backendAvailable) {
+      GameAPI.getProfile().then(function(profile) {
+        var cached = GameStorage.getPlayer();
+        var merged = Object.assign({}, cached, profile);
+        GameStorage.savePlayer(merged);
+        renderProfileUI(merged);
+      }).catch(function() {
+        renderProfileUI(GameStorage.getPlayer());
+      });
+      GameAPI.getPlayerStats().then(function(stats) {
+        if (stats) {
+          var player = GameStorage.getPlayer();
+          GameStorage.savePlayer(Object.assign({}, player, stats));
+        }
+      }).catch(function() {});
+    } else {
+      renderProfileUI(GameStorage.getPlayer());
+    }
+  }
+
+  function renderProfileUI(player) {
     var adventure = GameStorage.getAdventure();
     document.getElementById('profile-avatar').textContent = ['🎮', '🦊', '🐱', '🦁', '🐼', '🦄', '🐲', '🤖'][player.avatar || 0];
     document.getElementById('profile-name').textContent = player.nickname;
