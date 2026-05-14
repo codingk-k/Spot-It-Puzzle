@@ -813,50 +813,50 @@ window.GameLevels = (function () {
   var diffGenerators = {
     1: function () {
       return [
-        { x: 160, y: 200, radius: 35, type: 'COLOR_CHANGE', description: '建筑窗户颜色变化' },
-        { x: 500, y: 380, radius: 35, type: 'OBJECT_REMOVED', description: '汽车颜色变化' },
-        { x: 100, y: 80, radius: 35, type: 'COLOR_CHANGE', description: '云朵位置变化' }
+        { x: 176, y: 145, radius: 35, type: 'COLOR_CHANGE', description: '建筑窗户颜色变化' },
+        { x: 535, y: 385, radius: 35, type: 'OBJECT_REMOVED', description: '汽车颜色变化' },
+        { x: 115, y: 100, radius: 35, type: 'COLOR_CHANGE', description: '云朵位置变化' }
       ];
     },
     2: function () {
       return [
-        { x: 200, y: 380, radius: 35, type: 'OBJECT_REMOVED', description: '蝴蝶消失' },
+        { x: 200, y: 382, radius: 35, type: 'OBJECT_REMOVED', description: '蝴蝶消失' },
         { x: 350, y: 460, radius: 35, type: 'COLOR_CHANGE', description: '蘑菇颜色变化' },
         { x: 680, y: 80, radius: 35, type: 'OBJECT_REMOVED', description: '太阳光芒变化' }
       ];
     },
     3: function () {
       return [
-        { x: 140, y: 280, radius: 30, type: 'COLOR_CHANGE', description: '花瓶颜色变化' },
+        { x: 140, y: 260, radius: 30, type: 'COLOR_CHANGE', description: '花瓶颜色变化' },
         { x: 500, y: 100, radius: 30, type: 'COLOR_CHANGE', description: '时钟颜色变化' },
-        { x: 350, y: 80, radius: 30, type: 'COLOR_CHANGE', description: '画框内容变化' }
+        { x: 390, y: 110, radius: 30, type: 'COLOR_CHANGE', description: '画框内容变化' }
       ];
     },
     4: function () {
       return [
         { x: 160, y: 200, radius: 28, type: 'COLOR_CHANGE', description: '霓虹灯颜色变化' },
         { x: 460, y: 180, radius: 28, type: 'COLOR_CHANGE', description: 'HOTEL标志变化' },
-        { x: 320, y: 260, radius: 25, type: 'COLOR_CHANGE', description: '霓虹框颜色变化' },
-        { x: 100, y: 420, radius: 28, type: 'COLOR_CHANGE', description: '汽车颜色变化' },
-        { x: 550, y: 380, radius: 25, type: 'COLOR_CHANGE', description: '路灯颜色变化' }
+        { x: 350, y: 270, radius: 25, type: 'COLOR_CHANGE', description: '霓虹框颜色变化' },
+        { x: 135, y: 410, radius: 28, type: 'COLOR_CHANGE', description: '汽车颜色变化' },
+        { x: 500, y: 365, radius: 25, type: 'COLOR_CHANGE', description: '路灯颜色变化' }
       ];
     },
     5: function () {
       return [
-        { x: 200, y: 460, radius: 25, type: 'OBJECT_REMOVED', description: '石头消失' },
+        { x: 200, y: 465, radius: 25, type: 'OBJECT_REMOVED', description: '石头消失' },
         { x: 450, y: 485, radius: 25, type: 'COLOR_CHANGE', description: '蘑菇颜色变化' },
         { x: 400, y: 100, radius: 25, type: 'OBJECT_REMOVED', description: '太阳大小变化' },
         { x: 120, y: 490, radius: 25, type: 'COLOR_CHANGE', description: '花朵颜色变化' },
-        { x: 250, y: 70, radius: 25, type: 'OBJECT_REMOVED', description: '鸟消失' }
+        { x: 350, y: 60, radius: 25, type: 'OBJECT_REMOVED', description: '鸟消失' }
       ];
     },
     6: function () {
       return [
-        { x: 120, y: 280, radius: 25, type: 'COLOR_CHANGE', description: '花瓶颜色变化' },
+        { x: 120, y: 260, radius: 25, type: 'COLOR_CHANGE', description: '花瓶颜色变化' },
         { x: 650, y: 90, radius: 25, type: 'COLOR_CHANGE', description: '时钟颜色变化' },
-        { x: 160, y: 310, radius: 22, type: 'COLOR_CHANGE', description: '杯子颜色变化' },
-        { x: 500, y: 70, radius: 25, type: 'COLOR_CHANGE', description: '画框内容变化' },
-        { x: 80, y: 290, radius: 22, type: 'COLOR_CHANGE', description: '书本颜色变化' }
+        { x: 160, y: 300, radius: 22, type: 'COLOR_CHANGE', description: '杯子颜色变化' },
+        { x: 535, y: 95, radius: 25, type: 'COLOR_CHANGE', description: '画框内容变化' },
+        { x: 100, y: 290, radius: 22, type: 'COLOR_CHANGE', description: '书本颜色变化' }
       ];
     },
     7: function () {
@@ -864,32 +864,32 @@ window.GameLevels = (function () {
         { x: 150, y: 220, radius: 22, type: 'COLOR_CHANGE', description: 'CYBER标志变化' },
         { x: 450, y: 180, radius: 22, type: 'COLOR_CHANGE', description: 'NEON标志变化' },
         { x: 640, y: 200, radius: 22, type: 'COLOR_CHANGE', description: '2077标志变化' },
-        { x: 210, y: 270, radius: 20, type: 'COLOR_CHANGE', description: '霓虹框变化' },
-        { x: 510, y: 250, radius: 20, type: 'COLOR_CHANGE', description: '霓虹框变化' },
-        { x: 80, y: 440, radius: 22, type: 'COLOR_CHANGE', description: '汽车颜色变化' },
-        { x: 400, y: 400, radius: 20, type: 'COLOR_CHANGE', description: '路灯颜色变化' }
+        { x: 235, y: 285, radius: 20, type: 'COLOR_CHANGE', description: '霓虹框变化' },
+        { x: 540, y: 267, radius: 20, type: 'COLOR_CHANGE', description: '霓虹框变化' },
+        { x: 115, y: 430, radius: 22, type: 'COLOR_CHANGE', description: '汽车颜色变化' },
+        { x: 400, y: 365, radius: 20, type: 'COLOR_CHANGE', description: '路灯颜色变化' }
       ];
     },
     8: function () {
       return [
         { x: 100, y: 460, radius: 20, type: 'COLOR_CHANGE', description: '蘑菇颜色变化' },
         { x: 250, y: 470, radius: 18, type: 'COLOR_CHANGE', description: '蘑菇颜色变化' },
-        { x: 200, y: 350, radius: 20, type: 'OBJECT_REMOVED', description: '蝴蝶消失' },
-        { x: 450, y: 320, radius: 18, type: 'OBJECT_REMOVED', description: '蝴蝶消失' },
-        { x: 150, y: 490, radius: 18, type: 'OBJECT_REMOVED', description: '石头消失' },
+        { x: 200, y: 352, radius: 20, type: 'OBJECT_REMOVED', description: '蝴蝶消失' },
+        { x: 450, y: 322, radius: 18, type: 'OBJECT_REMOVED', description: '蝴蝶消失' },
+        { x: 150, y: 492, radius: 18, type: 'OBJECT_REMOVED', description: '石头消失' },
         { x: 130, y: 480, radius: 18, type: 'COLOR_CHANGE', description: '花朵颜色变化' },
         { x: 700, y: 80, radius: 20, type: 'OBJECT_REMOVED', description: '太阳变化' }
       ];
     },
     9: function () {
       return [
-        { x: 110, y: 270, radius: 18, type: 'COLOR_CHANGE', description: '灶台变化' },
-        { x: 250, y: 250, radius: 18, type: 'COLOR_CHANGE', description: '水龙头变化' },
+        { x: 110, y: 220, radius: 18, type: 'COLOR_CHANGE', description: '灶台变化' },
+        { x: 250, y: 230, radius: 18, type: 'COLOR_CHANGE', description: '水龙头变化' },
         { x: 400, y: 290, radius: 18, type: 'COLOR_CHANGE', description: '盘子颜色变化' },
         { x: 500, y: 285, radius: 16, type: 'COLOR_CHANGE', description: '杯子颜色变化' },
         { x: 200, y: 240, radius: 16, type: 'COLOR_CHANGE', description: '书本颜色变化' },
         { x: 700, y: 60, radius: 18, type: 'COLOR_CHANGE', description: '时钟颜色变化' },
-        { x: 650, y: 380, radius: 18, type: 'COLOR_CHANGE', description: '花瓶颜色变化' }
+        { x: 650, y: 360, radius: 18, type: 'COLOR_CHANGE', description: '花瓶颜色变化' }
       ];
     },
     10: function () {
@@ -898,11 +898,11 @@ window.GameLevels = (function () {
         { x: 310, y: 160, radius: 16, type: 'COLOR_CHANGE', description: '霓虹Z变化' },
         { x: 490, y: 170, radius: 16, type: 'COLOR_CHANGE', description: '霓虹A变化' },
         { x: 660, y: 190, radius: 16, type: 'COLOR_CHANGE', description: '霓虹!变化' },
-        { x: 200, y: 230, radius: 16, type: 'COLOR_CHANGE', description: '霓虹框变化' },
-        { x: 400, y: 210, radius: 16, type: 'COLOR_CHANGE', description: '霓虹框变化' },
-        { x: 80, y: 400, radius: 16, type: 'COLOR_CHANGE', description: '汽车颜色变化' },
-        { x: 600, y: 405, radius: 16, type: 'COLOR_CHANGE', description: '汽车颜色变化' },
-        { x: 150, y: 350, radius: 16, type: 'COLOR_CHANGE', description: '路灯变化' }
+        { x: 220, y: 242, radius: 16, type: 'COLOR_CHANGE', description: '霓虹框变化' },
+        { x: 422, y: 225, radius: 16, type: 'COLOR_CHANGE', description: '霓虹框变化' },
+        { x: 115, y: 390, radius: 16, type: 'COLOR_CHANGE', description: '汽车颜色变化' },
+        { x: 635, y: 395, radius: 16, type: 'COLOR_CHANGE', description: '汽车颜色变化' },
+        { x: 150, y: 315, radius: 16, type: 'COLOR_CHANGE', description: '路灯变化' }
       ];
     }
   };
@@ -992,61 +992,72 @@ window.GameLevels = (function () {
   };
 
   function generateLevel(levelId) {
-    if (cache[levelId]) return cache[levelId];
-
     var levelDef = LEVELS.find(function (l) { return l.id === levelId; });
     if (!levelDef) return null;
 
-    var canvasA = document.createElement('canvas');
-    canvasA.width = W;
-    canvasA.height = H;
-    var ctxA = canvasA.getContext('2d');
+    if (!cache[levelId]) {
+      var canvasA = document.createElement('canvas');
+      canvasA.width = W;
+      canvasA.height = H;
+      var ctxA = canvasA.getContext('2d');
 
-    var canvasB = document.createElement('canvas');
-    canvasB.width = W;
-    canvasB.height = H;
-    var ctxB = canvasB.getContext('2d');
+      var canvasB = document.createElement('canvas');
+      canvasB.width = W;
+      canvasB.height = H;
+      var ctxB = canvasB.getContext('2d');
 
-    var renderer = sceneRenderers[levelId];
-    if (renderer) {
-      _rngFn = _rng(levelId * 7919 + 42);
-      renderer(ctxA);
-      _rngFn = _rng(levelId * 7919 + 42);
-      renderer(ctxB);
+      var renderer = sceneRenderers[levelId];
+      if (renderer) {
+        _rngFn = _rng(levelId * 7919 + 42);
+        renderer(ctxA);
+        _rngFn = _rng(levelId * 7919 + 42);
+        renderer(ctxB);
+      }
+      _rngFn = Math.random;
+
+      var applier = diffAppliers[levelId];
+      if (applier) {
+        applier(ctxB);
+      }
+
+      var diffs = diffGenerators[levelId] ? diffGenerators[levelId]() : [];
+
+      cache[levelId] = {
+        id: levelDef.id,
+        name: levelDef.name,
+        theme: levelDef.theme,
+        timeLimit: levelDef.timeLimit,
+        difficulty: levelDef.difficulty,
+        diffCount: levelDef.diffCount,
+        imageA: canvasA.toDataURL('image/png'),
+        imageB: canvasB.toDataURL('image/png'),
+        diffTemplates: diffs.map(function (d, i) {
+          return {
+            id: i + 1,
+            x: d.x,
+            y: d.y,
+            radius: d.radius || levelDef.diffRadius,
+            type: d.type,
+            description: d.description
+          };
+        })
+      };
     }
-    _rngFn = Math.random;
 
-    var applier = diffAppliers[levelId];
-    if (applier) {
-      applier(ctxB);
-    }
-
-    var diffs = diffGenerators[levelId] ? diffGenerators[levelId]() : [];
-
+    var cached = cache[levelId];
     var result = {
-      id: levelDef.id,
-      name: levelDef.name,
-      theme: levelDef.theme,
-      timeLimit: levelDef.timeLimit,
-      difficulty: levelDef.difficulty,
-      diffCount: levelDef.diffCount,
-      imageA: canvasA.toDataURL('image/png'),
-      imageB: canvasB.toDataURL('image/png'),
-      differences: diffs.map(function (d, i) {
-        return {
-          id: i + 1,
-          x: d.x,
-          y: d.y,
-          radius: d.radius || levelDef.diffRadius,
-          type: d.type,
-          description: d.description,
-          found: false,
-          hinted: false
-        };
+      id: cached.id,
+      name: cached.name,
+      theme: cached.theme,
+      timeLimit: cached.timeLimit,
+      difficulty: cached.difficulty,
+      diffCount: cached.diffCount,
+      imageA: cached.imageA,
+      imageB: cached.imageB,
+      differences: cached.diffTemplates.map(function (d) {
+        return Object.assign({}, d, { found: false, hinted: false });
       })
     };
-
-    cache[levelId] = result;
     return result;
   }
 
