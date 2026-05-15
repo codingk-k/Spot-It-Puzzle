@@ -20,10 +20,11 @@ window.GameApp = (function () {
     initParticles();
     bindEvents();
 
+    updateHome();
+    navigateTo('home');
+
     if (GameAPI.isLoggedIn()) {
       loadProfileFromAPI();
-    } else {
-      navigateTo('login');
     }
 
     window.addEventListener('hashchange', function () {
@@ -39,14 +40,15 @@ window.GameApp = (function () {
       var merged = Object.assign({}, cached, profile);
       GameStorage.savePlayer(merged);
       updateHome();
-      navigateTo('home');
     }).catch(function(err) {
       if (err.code === 401) {
-        navigateTo('login');
+        GameAPI.clearToken();
+        backendAvailable = false;
+        updateHome();
+        showToast('登录已过期，已切换离线模式', 'info');
       } else {
         backendAvailable = false;
         updateHome();
-        navigateTo('home');
         showToast('无法连接服务器，使用离线模式', 'info');
       }
     });
@@ -129,6 +131,12 @@ window.GameApp = (function () {
     });
     $('register-password').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') doRegister();
+    });
+    $('btn-offline-mode').addEventListener('click', function (e) {
+      e.preventDefault();
+      backendAvailable = false;
+      updateHome();
+      navigateTo('home');
     });
 
     $('btn-start-game').addEventListener('click', function () {
@@ -1034,6 +1042,20 @@ window.GameApp = (function () {
   }
 
   function connectVersusWebSocket(onConnect) {
+    if (typeof _loadSockJS === 'function') {
+      _loadSockJS().then(function() {
+        if (!window.SockJS || !window.Stomp) {
+          showToast('WebSocket组件加载失败，使用离线模式', 'error');
+          return;
+        }
+        _doConnectWebSocket(onConnect);
+      });
+    } else {
+      _doConnectWebSocket(onConnect);
+    }
+  }
+
+  function _doConnectWebSocket(onConnect) {
     try {
       var socket = new SockJS(GameAPI.BASE_URL.replace('/api', '') + '/ws/game');
       stompClient = Stomp.over(socket);

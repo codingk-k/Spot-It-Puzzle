@@ -14,6 +14,7 @@ window.GameAPI = (function() {
     return new Promise(function(resolve, reject) {
       var xhr = new XMLHttpRequest();
       xhr.open(method, BASE_URL + path, true);
+      xhr.timeout = 5000;
       Object.keys(headers).forEach(function(k) { xhr.setRequestHeader(k, headers[k]); });
       xhr.onload = function() {
         if (xhr.status === 401) { clearToken(); reject({code:401,message:'未授权'}); return; }
@@ -24,6 +25,7 @@ window.GameAPI = (function() {
         } catch(e) { reject({code:xhr.status,message:xhr.statusText}); }
       };
       xhr.onerror = function() { reject({code:0,message:'无法连接服务器'}); };
+      xhr.ontimeout = function() { reject({code:0,message:'连接超时'}); };
       xhr.send(data ? JSON.stringify(data) : null);
     });
   }
