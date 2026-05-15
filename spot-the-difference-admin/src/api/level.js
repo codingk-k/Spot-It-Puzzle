@@ -21,11 +21,11 @@ export function deleteLevel(id) {
 }
 
 export function publishLevel(id) {
-  return put(`/admin/levels/${id}/publish`)
+  return post(`/admin/levels/${id}/publish`)
 }
 
 export function offlineLevel(id) {
-  return put(`/admin/levels/${id}/offline`)
+  return post(`/admin/levels/${id}/offline`)
 }
 
 export function getLevelDiffs(id) {

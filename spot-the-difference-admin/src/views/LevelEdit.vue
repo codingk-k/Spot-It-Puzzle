@@ -187,13 +187,13 @@ async function loadLevel() {
     Object.assign(form, {
       name: data.name || '',
       description: data.description || '',
-      theme: data.theme || '',
-      chapter: data.chapter || 1,
+      theme: data.themeId || data.theme || '',
+      chapter: data.chapterId || data.chapter || 1,
       difficulty: data.difficulty || 'EASY',
       timeLimit: data.timeLimit || 120,
       diffRadius: data.diffRadius || 30,
-      imageA: data.imageA || '',
-      imageB: data.imageB || ''
+      imageA: data.imageAUrl || data.imageA || '',
+      imageB: data.imageBUrl || data.imageB || ''
     })
   } catch (e) {
     ElMessage.error('加载关卡信息失败')
@@ -206,8 +206,8 @@ async function loadDiffs() {
     const data = res.data || res
     diffMarkers.value = (Array.isArray(data) ? data : []).map(d => ({
       id: d.id || Date.now() + Math.random(),
-      x: d.x || 0,
-      y: d.y || 0,
+      x: d.x || d.diffX || 0,
+      y: d.y || d.diffY || 0,
       radius: d.radius || form.diffRadius,
       type: d.type || 'COLOR_CHANGE',
       description: d.description || ''
@@ -223,7 +223,18 @@ async function handleSave() {
 
   saving.value = true
   try {
-    const payload = { ...form }
+    const payload = {
+      name: form.name,
+      description: form.description,
+      themeId: form.theme,
+      chapterId: form.chapter,
+      difficulty: form.difficulty,
+      timeLimit: form.timeLimit,
+      diffRadius: form.diffRadius,
+      diffCount: diffMarkers.value.length || undefined,
+      imageAUrl: form.imageA,
+      imageBUrl: form.imageB
+    }
     if (isEdit.value) {
       await updateLevel(levelId.value, payload)
       ElMessage.success('保存成功')
@@ -246,7 +257,18 @@ async function handlePublish() {
 
   saving.value = true
   try {
-    const payload = { ...form }
+    const payload = {
+      name: form.name,
+      description: form.description,
+      themeId: form.theme,
+      chapterId: form.chapter,
+      difficulty: form.difficulty,
+      timeLimit: form.timeLimit,
+      diffRadius: form.diffRadius,
+      diffCount: diffMarkers.value.length || undefined,
+      imageAUrl: form.imageA,
+      imageBUrl: form.imageB
+    }
     let currentId = levelId.value
     if (!isEdit.value) {
       const res = await createLevel(payload)

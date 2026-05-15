@@ -473,23 +473,8 @@ window.GameApp = (function () {
   function startGame(levelId) {
     if (backendAvailable) {
       GameAPI.startLevel(levelId).then(function() {
-        return GameAPI.getLevelDetail(levelId);
-      }).then(function(level) {
         backendAvailable = true;
-        initGameState(levelId, level);
-        if (level.imageAUrl) {
-          document.getElementById('img-a').src = level.imageAUrl;
-        } else {
-          var fallback = GameLevels.generateLevel(levelId);
-          if (fallback) document.getElementById('img-a').src = fallback.imageA;
-        }
-        if (level.imageBUrl) {
-          document.getElementById('img-b').src = level.imageBUrl;
-        } else {
-          var fallback2 = GameLevels.generateLevel(levelId);
-          if (fallback2) document.getElementById('img-b').src = fallback2.imageB;
-        }
-        startGameTimerFromState();
+        startGameLocal(levelId);
       }).catch(function(err) {
         if (err.code === 401) {
           navigateTo('login');
@@ -598,41 +583,34 @@ window.GameApp = (function () {
     gameState.autoHintShown = false;
 
     if (backendAvailable && gameState.levelId) {
-      GameAPI.checkClick(gameState.levelId, clickX, clickY).then(function(result) {
+      GameAPI.checkClick(gameState.levelId, Math.round(clickX), Math.round(clickY)).then(function(result) {
         if (result.hit) {
-          var diff = {
-            x: result.diffX || clickX,
-            y: result.diffY || clickY,
-            radius: result.radius || 30,
-            found: true,
-            hinted: false
-          };
-          if (result.diffId) {
-            var existing = gameState.levelData.differences.filter(function(d) { return d.id === result.diffId; })[0];
-            if (existing) { diff = existing; diff.found = true; }
+          var diffs = gameState.levelData.differences;
+          var hitDiff = null;
+          if (result.diffIndex !== undefined && result.diffIndex >= 0 && result.diffIndex < diffs.length) {
+            hitDiff = diffs[result.diffIndex];
           }
-          foundDiff(diff, side, wrapper);
+          if (hitDiff && !hitDiff.found) {
+            foundDiff(hitDiff, side, wrapper);
+          }
+          if (result.score !== undefined) {
+            gameState.score += result.score;
+            document.getElementById('game-score').textContent = gameState.score;
+          }
+          if (result.combo !== undefined) {
+            gameState.combo = result.combo;
+            var comboEl = document.getElementById('game-combo');
+            if (gameState.combo >= 2) {
+              comboEl.textContent = 'x' + gameState.combo + ' 连击';
+              comboEl.classList.add('active');
+            } else {
+              comboEl.classList.remove('active');
+            }
+          }
         } else {
           wrongClick(side, wrapper, e.clientX - rect.left, e.clientY - rect.top);
-        }
-        if (result.score !== undefined) {
-          gameState.score = result.score;
-          document.getElementById('game-score').textContent = gameState.score;
-        }
-        if (result.combo !== undefined) {
-          gameState.combo = result.combo;
-          var comboEl = document.getElementById('game-combo');
-          if (gameState.combo >= 2) {
-            comboEl.textContent = 'x' + gameState.combo + ' 连击';
-            comboEl.classList.add('active');
-          } else {
-            comboEl.classList.remove('active');
-          }
-        }
-        if (result.foundCount !== undefined) {
-          gameState.foundCount = result.foundCount;
-          if (gameState.foundCount >= gameState.levelData.differences.length) {
-            setTimeout(function () { finishGame(); }, 500);
+          if (result.timePenalty) {
+            gameState.timeLeft = Math.max(0, gameState.timeLeft - result.timePenalty);
           }
         }
       }).catch(function(err) {

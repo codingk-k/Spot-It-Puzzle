@@ -1,0 +1,11 @@
+- [x] SecurityConfig 中添加 CORS 处理，OPTIONS 预检请求不被 Spring Security 拦截返回403
+- [x] 管理端 user.js store 的 login 方法正确解析 AuthResponse.playerInfo 中的 username 和 role
+- [x] 管理端 level.js 的 publishLevel/offlineLevel API 使用 POST 方法（与后端一致）
+- [x] 前端游戏 init() 时若有token则尝试连接后端，成功后 backendAvailable=true
+- [x] 前端游戏 startGame() 在 backendAvailable=true 时调用后端 API 创建游戏会话并获取关卡数据
+- [x] 前端游戏 handleGameClick() 在 backendAvailable=true 时发送 clickX/clickY 到后端验证
+- [x] 前端游戏 finishGame() 在 backendAvailable=true 时调用后端 API 提交通关结果
+- [x] 前端游戏后端API失败时正确回退到本地逻辑，不影响游戏体验
+- [x] 管理端 DiffMarker 组件的 x/y 坐标基于800x600基准坐标系正确计算
+- [x] 管理端创建关卡时差异点 x/y 坐标正确保存到后端 level_difference 表
+- [x] 管理后台登录后所有页面（看板、关卡管理、玩家管理）正常访问无403错误

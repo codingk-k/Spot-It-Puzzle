@@ -14,10 +14,12 @@ export const useUserStore = defineStore('user', () => {
     const res = await loginApi(loginForm)
     const data = res.data || res
     token.value = data.token
+    const info = data.playerInfo || data
     userInfo.value = {
-      id: data.id,
-      username: data.username,
-      role: data.role
+      id: info.id,
+      username: info.username,
+      nickname: info.nickname,
+      role: info.role
     }
     localStorage.setItem('token', data.token)
     localStorage.setItem('userInfo', JSON.stringify(userInfo.value))

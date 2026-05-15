@@ -29,6 +29,8 @@ public interface AdminService {
 
     void saveDiffs(Long levelId, List<DiffMark> diffs);
 
+    List<DiffMark> getDiffs(Long levelId);
+
     List<PlayerProfileVO> getPlayers(int page, int size);
 
     void banPlayer(Long playerId);

@@ -72,6 +72,11 @@ public class AdminController {
         return Result.success();
     }
 
+    @GetMapping("/levels/{id}/diffs")
+    public Result<List<DiffMark>> getDiffs(@PathVariable Long id) {
+        return Result.success(adminService.getDiffs(id));
+    }
+
     @GetMapping("/players")
     public Result<List<PlayerProfileVO>> getPlayers(
             @RequestParam(defaultValue = "1") int page,

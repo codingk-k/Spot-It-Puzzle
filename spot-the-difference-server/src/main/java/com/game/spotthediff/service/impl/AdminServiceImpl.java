@@ -177,6 +177,21 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
+    public List<DiffMark> getDiffs(Long levelId) {
+        List<LevelDifference> diffs = levelDifferenceMapper.selectList(
+                new LambdaQueryWrapper<LevelDifference>()
+                        .eq(LevelDifference::getLevelId, levelId)
+                        .orderByAsc(LevelDifference::getSortOrder));
+        return diffs.stream().map(d -> DiffMark.builder()
+                .x(d.getDiffX())
+                .y(d.getDiffY())
+                .radius(d.getRadius())
+                .type(d.getType())
+                .description(d.getDescription())
+                .build()).collect(Collectors.toList());
+    }
+
+    @Override
     public List<PlayerProfileVO> getPlayers(int page, int size) {
         List<Player> players = playerMapper.selectList(
                 new LambdaQueryWrapper<Player>()
