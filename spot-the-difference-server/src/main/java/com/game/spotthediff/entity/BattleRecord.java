@@ -20,6 +20,7 @@ public class BattleRecord {
 
     private Integer score;
 
+    @TableField("`rank`")
     private Integer rank;
 
     private Integer eloChange;

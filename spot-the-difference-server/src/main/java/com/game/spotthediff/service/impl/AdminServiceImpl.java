@@ -50,8 +50,8 @@ public class AdminServiceImpl implements AdminService {
                 new LambdaQueryWrapper<GameLevel>().eq(GameLevel::getStatus, "PUBLISHED"));
         Long totalGamesPlayed = progressMapper.selectCount(null);
 
-        Set<String> onlinePlayers = redisTemplate.opsForSet().members("online:players");
-        long onlineCount = onlinePlayers != null ? onlinePlayers.size() : 0;
+        Set<Object> onlinePlayersRaw = redisTemplate.opsForSet().members("online:players");
+        long onlineCount = onlinePlayersRaw != null ? onlinePlayersRaw.size() : 0;
 
         String today = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         Long activeToday = playerMapper.selectCount(
@@ -69,8 +69,8 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public int getOnlineCount() {
-        Set<String> onlinePlayers = redisTemplate.opsForSet().members("online:players");
-        return onlinePlayers != null ? onlinePlayers.size() : 0;
+        Set<Object> onlinePlayersRaw = redisTemplate.opsForSet().members("online:players");
+        return onlinePlayersRaw != null ? onlinePlayersRaw.size() : 0;
     }
 
     @Override

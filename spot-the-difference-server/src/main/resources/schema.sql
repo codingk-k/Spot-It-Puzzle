@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS battle_record (
     player_id BIGINT NOT NULL,
     mode VARCHAR(20) NOT NULL DEFAULT 'REALTIME',
     score INT DEFAULT 0,
-    rank INT DEFAULT 0,
+    `rank` INT DEFAULT 0,
     elo_change INT DEFAULT 0,
     duration INT DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
